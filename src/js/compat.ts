@@ -33,7 +33,7 @@ export async function initNodeModules() {
   nodeFsPromisesMod = await import("fs/promises");
 
   // @ts-ignore
-  nodeVmMod = (await import("vm")).default;
+  // nodeVmMod = (await import("vm")).default;
   nodePath = await import("path");
   pathSep = nodePath.sep;
 
@@ -106,7 +106,7 @@ if (!IN_NODE) {
  */
 function node_getBinaryResponse(
   path: string,
-  _file_sub_resource_hash?: string | undefined, // Ignoring sub resource hash. See issue-2431.
+  _file_sub_resource_hash?: string | undefined // Ignoring sub resource hash. See issue-2431.
 ):
   | { response: Promise<Response>; binary?: undefined }
   | { binary: Promise<Uint8Array> } {
@@ -124,7 +124,7 @@ function node_getBinaryResponse(
         .readFile(path)
         .then(
           (data: Buffer) =>
-            new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+            new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
         ),
     };
   }
@@ -141,7 +141,7 @@ function node_getBinaryResponse(
  */
 function browser_getBinaryResponse(
   path: string,
-  subResourceHash: string | undefined,
+  subResourceHash: string | undefined
 ): { response: Promise<Response>; binary?: undefined } {
   const url = new URL(path, location as unknown as URL);
   let options = subResourceHash ? { integrity: subResourceHash } : {};
@@ -151,7 +151,7 @@ function browser_getBinaryResponse(
 /** @private */
 export let getBinaryResponse: (
   path: string,
-  file_sub_resource_hash?: string | undefined,
+  file_sub_resource_hash?: string | undefined
 ) =>
   | { response: Promise<Response>; binary?: undefined }
   | { response?: undefined; binary: Promise<Uint8Array> };
@@ -163,7 +163,7 @@ if (IN_NODE) {
 
 export async function loadBinaryFile(
   path: string,
-  file_sub_resource_hash?: string | undefined,
+  file_sub_resource_hash?: string | undefined
 ): Promise<Uint8Array> {
   const { response, binary } = getBinaryResponse(path, file_sub_resource_hash);
   if (binary) {
@@ -219,8 +219,9 @@ async function nodeLoadScript(url: string) {
     url = url.slice("file://".length);
   }
   if (url.includes("://")) {
+    throw new Error("unsupported");
     // If it's a url, load it with fetch then eval it.
-    nodeVmMod.runInThisContext(await (await fetch(url)).text());
+    // nodeVmMod.runInThisContext(await (await fetch(url)).text());
   } else {
     // Otherwise, hopefully it is a relative path we can load from the file
     // system.
@@ -240,7 +241,7 @@ function browserBase16ToBase64(b16: string): string {
       .map(function (a) {
         return String.fromCharCode(parseInt(a, 16));
       })
-      .join(""),
+      .join("")
   );
 }
 
@@ -288,7 +289,7 @@ export async function calculateDirname(): Promise<string> {
   const indexOfLastSlash = fileName.lastIndexOf(pathSep);
   if (indexOfLastSlash === -1) {
     throw new Error(
-      "Could not extract indexURL path from pyodide module location",
+      "Could not extract indexURL path from pyodide module location"
     );
   }
   return fileName.slice(0, indexOfLastSlash);
