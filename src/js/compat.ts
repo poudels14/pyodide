@@ -72,7 +72,7 @@ export const compat = {
     path: string,
     file_sub_resource_hash?: string | undefined
   ): Promise<Uint8Array> {
-    const { response, binary } = globalThis._____pyodide_compatExt.fetchBinary(
+    const { response, binary } = compat.fetchBinary(
       path,
       file_sub_resource_hash
     );
@@ -123,7 +123,7 @@ export async function initNodeModules() {
 if (IN_NODE) {
   compat.setExtension({
     resolvePath(path, base) {
-      return globalThis._____pyodide_compatExt.node.fs.resolve(
+      return globalThis._____pyodide_compatExt.node.path.resolve(
         base || ".",
         path
       );
