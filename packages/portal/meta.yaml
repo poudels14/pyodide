@@ -1,0 +1,8 @@
+package:
+  name: portal
+  version: 0.0.1
+  tag:
+  - library
+  - min-scipy-stack
+source:
+  path: src
