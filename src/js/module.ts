@@ -2,7 +2,7 @@
 
 import { ConfigType } from "./pyodide";
 import { initializeNativeFS } from "./nativefs";
-import { loadBinaryFile, getBinaryResponse } from "./compat";
+import { compat } from "./compat";
 import { Module } from "./types";
 
 /**
@@ -81,7 +81,7 @@ function mountLocalDirectories(Module: Module, mounts: string[]) {
  * @param stdlibPromise A promise that resolves to the standard library.
  */
 function installStdlib(Module: Module, stdlibURL: string) {
-  const stdlibPromise: Promise<Uint8Array> = loadBinaryFile(stdlibURL);
+  const stdlibPromise: Promise<Uint8Array> = compat.loadBinaryFile(stdlibURL);
 
   Module.preRun.push(() => {
     /* @ts-ignore */
@@ -136,13 +136,15 @@ export function preloadWasm(Module: Module, indexURL: string) {
     // https://emscripten.org/docs/api_reference/module.html?highlight=instantiatewasm#Module.instantiateWasm
     return;
   }
-  const { binary, response } = getBinaryResponse(indexURL + "pyodide.asm.wasm");
+  const { binary, response } = compat.fetchBinary(
+    indexURL + "pyodide.asm.wasm"
+  );
   Module.instantiateWasm = function (
     imports: { [key: string]: any },
     successCallback: (
       instance: WebAssembly.Instance,
-      module: WebAssembly.Module,
-    ) => void,
+      module: WebAssembly.Module
+    ) => void
   ) {
     (async function () {
       try {

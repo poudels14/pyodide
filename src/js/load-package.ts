@@ -1,13 +1,7 @@
 import "./constants";
 
 import { IN_NODE } from "./environments";
-import {
-  nodeFsPromisesMod,
-  loadBinaryFile,
-  initNodeModules,
-  resolvePath,
-  base16ToBase64,
-} from "./compat.js";
+import { initNodeModules, base16ToBase64, compat } from "./compat.js";
 import { createLock } from "./lock";
 import { loadDynlibsFromPackage } from "./dynload";
 import { PyProxy } from "generated/pyproxy";
@@ -25,7 +19,7 @@ async function initializePackageIndex(lockFilePromise: Promise<any>) {
   const lockfile = await lockFilePromise;
   if (!lockfile.packages) {
     throw new Error(
-      "Loaded pyodide lock file does not contain the expected key 'packages'.",
+      "Loaded pyodide lock file does not contain the expected key 'packages'."
     );
   }
 
@@ -53,7 +47,7 @@ async function initializePackageIndex(lockFilePromise: Promise<any>) {
 
   API.lockfile_unvendored_stdlibs =
     API.lockfile_unvendored_stdlibs_and_test.filter(
-      (lib: string) => lib !== "test",
+      (lib: string) => lib !== "test"
     );
   await loadPackage(API.config.packages, { messageCallback() {} });
 }
@@ -144,7 +138,7 @@ function createDonePromise(): ResolvablePromise {
  */
 function addPackageToLoad(
   name: string,
-  toLoad: Map<string, PackageLoadMetadata>,
+  toLoad: Map<string, PackageLoadMetadata>
 ) {
   const normalizedName = canonicalizePackageName(name);
   if (toLoad.has(normalizedName)) {
@@ -185,7 +179,7 @@ function addPackageToLoad(
  */
 function recursiveDependencies(
   names: string[],
-  errorCallback: (err: string) => void,
+  errorCallback: (err: string) => void
 ): Map<string, PackageLoadMetadata> {
   const toLoad: Map<string, PackageLoadMetadata> = new Map();
   for (let name of names) {
@@ -202,7 +196,7 @@ function recursiveDependencies(
       errorCallback(
         `Loading same package ${pkgname} from ${channel} and ${
           toLoad.get(pkgname)!.channel
-        }`,
+        }`
       );
       continue;
     }
@@ -247,15 +241,11 @@ function recursiveDependencies(
  */
 async function downloadPackage(
   pkg: PackageLoadMetadata,
-  checkIntegrity: boolean = true,
+  checkIntegrity: boolean = true
 ): Promise<Uint8Array> {
   let installBaseUrl: string;
   if (IN_NODE) {
     installBaseUrl = API.config.packageCacheDir;
-    // ensure that the directory exists before trying to download files into it
-    await nodeFsPromisesMod.mkdir(API.config.packageCacheDir, {
-      recursive: true,
-    });
   } else {
     installBaseUrl = API.config.indexURL;
   }
@@ -268,7 +258,7 @@ async function downloadPackage(
     const lockfilePackage = API.lockfile_packages[pkg.normalizedName];
     fileName = lockfilePackage.file_name;
 
-    uri = resolvePath(fileName, installBaseUrl);
+    uri = compat.resolvePath(fileName, installBaseUrl);
     fileSubResourceHash = "sha256-" + base16ToBase64(lockfilePackage.sha256);
   } else {
     uri = pkg.channel;
@@ -279,22 +269,29 @@ async function downloadPackage(
     fileSubResourceHash = undefined;
   }
   try {
-    return await loadBinaryFile(uri, fileSubResourceHash);
+    process?.env?.DEBUG && console.log("Loading package from uri =", uri);
+    return await API.loadBinaryFile(uri, fileSubResourceHash);
   } catch (e) {
     if (!IN_NODE || pkg.channel !== DEFAULT_CHANNEL) {
       throw e;
     }
   }
+  throw new Error("Downloading from CDN not supported");
   console.log(
-    `Didn't find package ${fileName} locally, attempting to load from ${cdnURL}`,
+    `Didn't find package ${fileName} locally, attempting to load from ${cdnURL}`
   );
   // If we are IN_NODE, download the package from the cdn, then stash it into
   // the node_modules directory for future use.
-  let binary = await loadBinaryFile(cdnURL + fileName);
+  let binary = await API.loadBinaryFile(cdnURL + fileName);
   console.log(
-    `Package ${fileName} loaded from ${cdnURL}, caching the wheel in node_modules for future use.`,
+    `Package ${fileName} loaded from ${cdnURL}, caching the wheel in node_modules for future use.`
   );
-  await nodeFsPromisesMod.writeFile(uri, binary);
+
+  // ensure that the directory exists before trying to download files into it
+  await compat.node.fs.mkdir(API.config.packageCacheDir, {
+    recursive: true,
+  });
+  await compat.node.fs.writeFile(uri, binary);
   return binary;
 }
 
@@ -307,7 +304,7 @@ async function downloadPackage(
 async function installPackage(
   normalizedName: string,
   buffer: Uint8Array,
-  channel: string,
+  channel: string
 ) {
   let pkg = API.lockfile_packages[normalizedName];
   if (!pkg) {
@@ -336,7 +333,7 @@ async function installPackage(
 
   if (DEBUG) {
     console.debug(
-      `Found ${dynlibs.length} dynamic libraries inside ${filename}`,
+      `Found ${dynlibs.length} dynamic libraries inside ${filename}`
     );
   }
 
@@ -359,14 +356,21 @@ async function downloadAndInstall(
   toLoad: Map<string, PackageLoadMetadata>,
   loaded: Set<InternalPackageData>,
   failed: Map<string, Error>,
-  checkIntegrity: boolean = true,
+  checkIntegrity: boolean = true
 ) {
   if (loadedPackages[pkg.name] !== undefined) {
     return;
   }
-
   try {
+    const now = new Date();
+    process?.env?.DEBUG && console.log("Downloading package =", pkg);
     const buffer = await downloadPackage(pkg, checkIntegrity);
+    process?.env?.DEBUG &&
+      console.log(
+        "Download took =",
+        new Date().getTime() - now.getTime(),
+        "ms"
+      );
     const installPromiseDependencies = pkg.depends.map((dependency) => {
       return toLoad.has(dependency)
         ? toLoad.get(dependency)!.done
@@ -446,7 +450,7 @@ export async function loadPackage(
     checkIntegrity?: boolean;
   } = {
     checkIntegrity: true,
-  },
+  }
 ): Promise<Array<PackageData>> {
   const loadedPackageData = new Set<InternalPackageData>();
   const messageCallback = options.messageCallback || console.log;
@@ -475,7 +479,7 @@ export async function loadPackage(
       errorCallback(
         `URI mismatch, attempting to load package ${name} from ${channel} ` +
           `while it is already loaded from ${loaded}. To override a dependency, ` +
-          `load the custom package first.`,
+          `load the custom package first.`
       );
     }
   }
@@ -486,7 +490,7 @@ export async function loadPackage(
   }
 
   const packageNames = Array.from(toLoad.values(), ({ name }) => name).join(
-    ", ",
+    ", "
   );
   const failed = new Map<string, Error>();
   const releaseLock = await acquirePackageLock();
@@ -508,12 +512,12 @@ export async function loadPackage(
         toLoad,
         loadedPackageData,
         failed,
-        options.checkIntegrity,
+        options.checkIntegrity
       );
     }
 
     await Promise.all(
-      Array.from(toLoad.values()).map(({ installPromise }) => installPromise),
+      Array.from(toLoad.values()).map(({ installPromise }) => installPromise)
     );
 
     Module.reportUndefinedSymbols();

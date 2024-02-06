@@ -1,4 +1,4 @@
-import { loadPyodide, version } from "./pyodide";
+import { loadPyodide, version, setCompatExtension } from "./pyodide";
 import { type PackageData } from "./load-package";
-export { loadPyodide, version, type PackageData };
+export { loadPyodide, setCompatExtension, version, type PackageData };
 (globalThis as any).loadPyodide = loadPyodide;

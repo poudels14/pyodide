@@ -5,8 +5,8 @@ import {
   calculateDirname,
   loadScript,
   initNodeModules,
-  resolvePath,
-  loadLockFile,
+  CompatExtension,
+  compat,
 } from "./compat";
 
 import { createModule, initializeFileSystem, preloadWasm } from "./module";
@@ -20,6 +20,11 @@ export type { PyodideInterface, TypedArray };
 export { version, type PackageData };
 
 declare function _createPyodideModule(Module: any): Promise<void>;
+
+// Only call this once to prevent discripencies
+export function setCompatExtension(ext: CompatExtension) {
+  compat.setExtension(ext, true);
+}
 
 /**
  * See documentation for loadPyodide.
@@ -162,11 +167,11 @@ export async function loadPyodide(
      * @ignore
      */
     _node_mounts?: string[];
-  } = {},
+  } = {}
 ): Promise<PyodideInterface> {
   await initNodeModules();
   let indexURL = options.indexURL || (await calculateDirname());
-  indexURL = resolvePath(indexURL); // A relative indexURL causes havoc.
+  indexURL = compat.resolvePath(indexURL); // A relative indexURL causes havoc.
   if (!indexURL.endsWith("/")) {
     indexURL += "/";
   }
@@ -195,7 +200,7 @@ export async function loadPyodide(
 
   const API = { config } as API;
   Module.API = API;
-  API.lockFilePromise = loadLockFile(config.lockFileURL);
+  API.lockFilePromise = compat.loadLockFile(config.lockFileURL);
 
   preloadWasm(Module, indexURL);
   initializeFileSystem(Module, config);
@@ -234,7 +239,7 @@ export async function loadPyodide(
       `\
 Pyodide version does not match: '${version}' <==> '${API.version}'. \
 If you updated the Pyodide version, make sure you also updated the 'indexURL' parameter passed to loadPyodide.\
-`,
+`
     );
   }
   // Disable further loading of Emscripten file_packager stuff.
@@ -255,14 +260,14 @@ If you updated the Pyodide version, make sure you also updated the 'indexURL' pa
   let importhook = API._pyodide._importhook;
   importhook.register_module_not_found_hook(
     API._import_name_to_package_name,
-    API.lockfile_unvendored_stdlibs_and_test,
+    API.lockfile_unvendored_stdlibs_and_test
   );
 
   if (API.lockfile_info.version !== version) {
     throw new Error(
       "Lock file version doesn't match Pyodide version.\n" +
         `   lockfile version: ${API.lockfile_info.version}\n` +
-        `   pyodide  version: ${version}`,
+        `   pyodide  version: ${version}`
     );
   }
   API.package_loader.init_loaded_packages();

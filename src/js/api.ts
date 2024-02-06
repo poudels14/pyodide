@@ -5,13 +5,15 @@ import { CanvasInterface, canvas } from "./canvas";
 
 import { PackageData, loadPackage, loadedPackages } from "./load-package";
 import { type PyProxy, type PyDict } from "generated/pyproxy";
-import { loadBinaryFile } from "./compat";
+import { compat } from "./compat";
 import { version } from "./version";
 import { setStdin, setStdout, setStderr } from "./streams";
 import { TypedArray } from "./types";
 
 // Exported for micropip
-API.loadBinaryFile = loadBinaryFile;
+API.loadBinaryFile = (path, file_sub_resource_hash) => {
+  return compat.loadBinaryFile(path, file_sub_resource_hash);
+};
 
 /**
  * Runs code after python vm has been initialized but prior to any bootstrapping.
@@ -165,7 +167,7 @@ export class PyodideAPI {
       checkIntegrity?: boolean;
     } = {
       checkIntegrity: true,
-    },
+    }
   ): Promise<Array<PackageData>> {
     let pyimports = API.pyodide_code.find_imports(code);
     let imports;
@@ -227,7 +229,7 @@ export class PyodideAPI {
    */
   static runPython(
     code: string,
-    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {},
+    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {}
   ): any {
     if (!options.globals) {
       options.globals = API.globals;
@@ -277,7 +279,7 @@ export class PyodideAPI {
    */
   static async runPythonAsync(
     code: string,
-    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {},
+    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {}
   ): Promise<any> {
     if (!options.globals) {
       options.globals = API.globals;
@@ -312,7 +314,7 @@ export class PyodideAPI {
    */
   static async runPythonSyncifying(
     code: string,
-    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {},
+    options: { globals?: PyProxy; locals?: PyProxy; filename?: string } = {}
   ): Promise<any> {
     if (!options.globals) {
       options.globals = API.globals;
@@ -402,9 +404,9 @@ export class PyodideAPI {
       defaultConverter?: (
         value: any,
         converter: (value: any) => any,
-        cacheConversion: (input: any, output: any) => void,
+        cacheConversion: (input: any, output: any) => void
       ) => any;
-    } = { depth: -1 },
+    } = { depth: -1 }
   ): any {
     // No point in converting these, it'd be dumb to proxy them so they'd just
     // get converted back by `js2python` at the end
@@ -494,14 +496,14 @@ export class PyodideAPI {
     format: string,
     options: {
       extractDir?: string;
-    } = {},
+    } = {}
   ) {
     if (
       !ArrayBuffer.isView(buffer) &&
       API.getTypeTag(buffer) !== "[object ArrayBuffer]"
     ) {
       throw new TypeError(
-        `Expected argument 'buffer' to be an ArrayBuffer or an ArrayBuffer view`,
+        `Expected argument 'buffer' to be an ArrayBuffer or an ArrayBuffer view`
       );
     }
     API.typedArrayAsUint8Array(buffer);
@@ -526,13 +528,13 @@ export class PyodideAPI {
    */
   static async mountNativeFS(
     path: string,
-    fileSystemHandle: FileSystemDirectoryHandle,
+    fileSystemHandle: FileSystemDirectoryHandle
     // TODO: support sync file system
     // sync: boolean = false
   ): Promise<NativeFS> {
     if (fileSystemHandle.constructor.name !== "FileSystemDirectoryHandle") {
       throw new TypeError(
-        `Expected argument 'fileSystemHandle' to be a FileSystemDirectoryHandle`,
+        `Expected argument 'fileSystemHandle' to be a FileSystemDirectoryHandle`
       );
     }
 
@@ -543,7 +545,7 @@ export class PyodideAPI {
     Module.FS.mount(
       Module.FS.filesystems.NATIVEFS_ASYNC,
       { fileSystemHandle: fileSystemHandle },
-      path,
+      path
     );
 
     // sync native ==> browser
@@ -676,7 +678,7 @@ function wrapPythonGlobals(globals_dict: PyDict, builtins_dict: PyDict) {
 
 let bootstrapFinalized: () => void;
 API.bootstrapFinalizedPromise = new Promise<void>(
-  (r) => (bootstrapFinalized = r),
+  (r) => (bootstrapFinalized = r)
 );
 
 /**
@@ -691,7 +693,7 @@ API.finalizeBootstrap = function (): PyodideInterface {
   if (err) {
     API.fatal_loading_error(
       "Failed to import _pyodide_core\n",
-      captured_stderr,
+      captured_stderr
     );
   }
 
@@ -708,10 +710,10 @@ API.finalizeBootstrap = function (): PyodideInterface {
 
   // Set up globals
   let globals = API.runPythonInternal(
-    "import __main__; __main__.__dict__",
+    "import __main__; __main__.__dict__"
   ) as PyDict;
   let builtins = API.runPythonInternal(
-    "import builtins; builtins.__dict__",
+    "import builtins; builtins.__dict__"
   ) as PyDict;
   API.globals = wrapPythonGlobals(globals, builtins);
 
@@ -724,7 +726,7 @@ API.finalizeBootstrap = function (): PyodideInterface {
     Object.defineProperty(o, "__all__", {
       get: () =>
         pyodide.toPy(
-          Object.getOwnPropertyNames(o).filter((name) => name !== "__all__"),
+          Object.getOwnPropertyNames(o).filter((name) => name !== "__all__")
         ),
       enumerable: false,
       configurable: true,
@@ -752,7 +754,7 @@ API.finalizeBootstrap = function (): PyodideInterface {
 
   API.os.environ.__setitem__(
     "LD_LIBRARY_PATH",
-    API.defaultLdLibraryPath.join(":"),
+    API.defaultLdLibraryPath.join(":")
   );
 
   // copy some last constants onto public API.

@@ -2,12 +2,11 @@ import { IN_NODE } from "./environments.js";
 import "./constants";
 
 import type { FSStream, FSStreamOpsGen } from "./types";
-const fs: any = IN_NODE ? require("fs") : undefined;
-const tty: any = IN_NODE ? require("tty") : undefined;
+import { compat } from "./compat.js";
 
 function nodeFsync(fd: number): void {
   try {
-    fs.fsyncSync(fd);
+    compat.node.fs.fsyncSync(fd);
   } catch (e: any) {
     if (e && e.code === "EINVAL") {
       return;
@@ -79,7 +78,7 @@ function isErrnoError(e: any) {
 }
 
 const waitBuffer = new Int32Array(
-  new WebAssembly.Memory({ shared: true, initial: 1, maximum: 1 }).buffer,
+  new WebAssembly.Memory({ shared: true, initial: 1, maximum: 1 }).buffer
 );
 function syncSleep(timeout: number): boolean {
   try {
@@ -153,7 +152,7 @@ function readWriteHelper(stream: Stream, cb: () => number, method: string) {
     // value
     // Maybe we should set nbytes = buffer.length here instead?
     console.warn(
-      `${method} returned undefined; a correct implementation must return a number`,
+      `${method} returned undefined; a correct implementation must return a number`
     );
     throw new FS.ErrnoError(cDefs.EIO);
   }
@@ -166,7 +165,7 @@ function readWriteHelper(stream: Stream, cb: () => number, method: string) {
 const prepareBuffer = (
   buffer: Uint8Array,
   offset: number,
-  length: number,
+  length: number
 ): Uint8Array =>
   API.typedArrayAsUint8Array(buffer).subarray(offset, offset + length);
 
@@ -225,7 +224,7 @@ function refreshStreams() {
 API.initializeStreams = function (
   stdin?: InFuncType,
   stdout?: (a: string) => void,
-  stderr?: (a: string) => void,
+  stderr?: (a: string) => void
 ) {
   const major = FS.createDevice.major++;
   DEVS.stdin = FS.makedev(major, 0);
@@ -342,19 +341,19 @@ export function setStdin(
     error?: boolean;
     isatty?: boolean;
     autoEOF?: boolean;
-  } = {},
+  } = {}
 ) {
   let { stdin, error, isatty, autoEOF, read } = options as StdinOptions &
     Partial<Reader>;
   const numset = +!!stdin + +!!error + +!!read;
   if (numset > 1) {
     throw new TypeError(
-      "At most one of stdin, read, and error must be provided.",
+      "At most one of stdin, read, and error must be provided."
     );
   }
   if (!stdin && autoEOF !== undefined) {
     throw new TypeError(
-      "The 'autoEOF' option can only be used with the 'stdin' option",
+      "The 'autoEOF' option can only be used with the 'stdin' option"
     );
   }
   if (numset === 0) {
@@ -383,7 +382,7 @@ type StdwriteOpts = {
 function _setStdwrite(
   options: StdwriteOpts & Partial<Writer>,
   setOps: (ops: Writer) => void,
-  getDefaults: () => StdwriteOpts & Partial<Writer>,
+  getDefaults: () => StdwriteOpts & Partial<Writer>
 ) {
   let { raw, isatty, batched, write } = options as StdwriteOpts &
     Partial<Writer>;
@@ -394,12 +393,12 @@ function _setStdwrite(
   }
   if (nset > 1) {
     throw new TypeError(
-      "At most one of 'raw', 'batched', and 'write' must be passed",
+      "At most one of 'raw', 'batched', and 'write' must be passed"
     );
   }
   if (!raw && !write && isatty) {
     throw new TypeError(
-      "Cannot set 'isatty' to true unless 'raw' or 'write' is provided",
+      "Cannot set 'isatty' to true unless 'raw' or 'write' is provided"
     );
   }
   if (raw) {
@@ -482,7 +481,7 @@ export function setStdout(
     raw?: (charCode: number) => void;
     write?: (buffer: Uint8Array) => number;
     isatty?: boolean;
-  } = {},
+  } = {}
 ) {
   _setStdwrite(options, _setStdoutOps, _getStdoutDefaults);
 }
@@ -497,7 +496,7 @@ export function setStderr(
     raw?: (charCode: number) => void;
     write?: (buffer: Uint8Array) => number;
     isatty?: boolean;
-  } = {},
+  } = {}
 ) {
   _setStdwrite(options, _setStderrOps, _getStderrDefaults);
 }
@@ -520,12 +519,12 @@ class NodeReader {
 
   constructor(fd: number) {
     this.fd = fd;
-    this.isatty = tty.isatty(fd);
+    this.isatty = compat.node.tty.isatty(fd);
   }
 
   read(buffer: Uint8Array): number {
     try {
-      return fs.readSync(this.fd, buffer);
+      return compat.node.fs.readSync(this.fd, buffer);
     } catch (e) {
       // Platform differences: on Windows, reading EOF throws an exception,
       // but on other OSes, reading EOF returns 0. Uniformize behavior by
@@ -573,7 +572,7 @@ class LegacyReader {
     if (ArrayBuffer.isView(val)) {
       if ((val as any).BYTES_PER_ELEMENT !== 1) {
         console.warn(
-          `Expected BYTES_PER_ELEMENT to be 1, infunc gave ${val.constructor}`,
+          `Expected BYTES_PER_ELEMENT to be 1, infunc gave ${val.constructor}`
         );
         throw new FS.ErrnoError(cDefs.EIO);
       }
@@ -589,7 +588,7 @@ class LegacyReader {
       return new Uint8Array(val as ArrayBuffer);
     }
     console.warn(
-      "Expected result to be undefined, null, string, array buffer, or array buffer view",
+      "Expected result to be undefined, null, string, array buffer, or array buffer view"
     );
     throw new FS.ErrnoError(cDefs.EIO);
   }
@@ -697,11 +696,11 @@ class NodeWriter {
   isatty: boolean;
   constructor(fd: number) {
     this.fd = fd;
-    this.isatty = tty.isatty(fd);
+    this.isatty = compat.node.tty.isatty(fd);
   }
 
   write(buffer: Uint8Array): number {
-    return fs.writeSync(this.fd, buffer);
+    return compat.node.fs.writeSync(this.fd, buffer);
   }
 
   fsync() {

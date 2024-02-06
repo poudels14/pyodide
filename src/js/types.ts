@@ -91,8 +91,8 @@ declare global {
       | ((
           obj: PyProxy,
           convert: (obj: PyProxy) => any,
-          cacheConversion: (obj: PyProxy, result: any) => void,
-        ) => any),
+          cacheConversion: (obj: PyProxy, result: any) => void
+        ) => any)
   ) => any;
 
   export const _pyproxy_getflags: (ptr: number) => number;
@@ -108,15 +108,15 @@ declare global {
   export const __pyproxy_iter_next: (ptr: number) => any;
   export const __pyproxyGen_Send: (
     ptr: number,
-    arg: any,
+    arg: any
   ) => IteratorResult<any>;
   export const __pyproxyGen_return: (
     ptr: number,
-    arg: any,
+    arg: any
   ) => IteratorResult<any>;
   export const __pyproxyGen_throw: (
     ptr: number,
-    arg: any,
+    arg: any
   ) => IteratorResult<any>;
   export const __pyproxyGen_asend: (ptr: number, idarg: number) => PyAwaitable;
   export const __pyproxyGen_areturn: (ptr: number) => PyAwaitable;
@@ -124,12 +124,12 @@ declare global {
   export const __pyproxy_getattr: (
     ptr: number,
     attr: string,
-    cache: Map<string, any>,
+    cache: Map<string, any>
   ) => any;
   export const __pyproxy_setattr: (
     ptr: number,
     attr: string,
-    value: any,
+    value: any
   ) => number;
   export const __pyproxy_delattr: (ptr: number, attr: string) => number;
   export const __pyproxy_hasattr: (ptr: number, attr: string) => number;
@@ -137,14 +137,14 @@ declare global {
     ptr: number,
     start: number,
     stop: number,
-    val: number,
+    val: number
   ) => any[];
   export const __pyproxy_pop: (ptr: number, popstart: boolean) => any;
   export const __pyproxy_ownKeys: (ptr: number) => (string | symbol)[];
   export const __pyproxy_ensure_future: (
     ptr: number,
     resolve: (res: any) => void,
-    reject: (exc: any) => void,
+    reject: (exc: any) => void
   ) => number;
   export const __pyproxy_get_buffer: (this_: number) => any;
   export const __pyproxy_apply: (
@@ -152,7 +152,7 @@ declare global {
     jsargs: any[],
     num_pos_args: number,
     kwargs_names: string[],
-    num_kwargs: number,
+    num_kwargs: number
   ) => any;
   export const __iscoroutinefunction: (a: number) => number;
 }
@@ -181,14 +181,14 @@ export type FSStreamOpsGen<T> = {
     b: Uint8Array,
     offset: number,
     length: number,
-    pos: number,
+    pos: number
   ) => number;
   write: (
     a: T,
     b: Uint8Array,
     offset: number,
     length: number,
-    pos: number,
+    pos: number
   ) => number;
 };
 
@@ -201,7 +201,7 @@ export interface FS {
     parent: string,
     name: string,
     input?: (() => number | null) | null,
-    output?: ((code: number) => void) | null,
+    output?: ((code: number) => void) | null
   ) => FSNode) & {
     major: number;
   };
@@ -225,7 +225,7 @@ export interface FS {
     buffer: any,
     offset: number,
     length: number,
-    position?: number,
+    position?: number
   ) => number;
   close: (stream: FSStream) => void;
   ErrnoError: { new (errno: number): Error };
@@ -258,8 +258,8 @@ export interface Module {
     imports: { [key: string]: any },
     successCallback: (
       instance: WebAssembly.Instance,
-      module: WebAssembly.Module,
-    ) => void,
+      module: WebAssembly.Module
+    ) => void
   ) => void;
 }
 
@@ -289,7 +289,7 @@ export interface API {
   initializeStreams: (
     stdin?: InFuncType | undefined,
     stdout?: ((a: string) => void) | undefined,
-    stderr?: ((a: string) => void) | undefined,
+    stderr?: ((a: string) => void) | undefined
   ) => void;
 
   getTypeTag: (o: any) => string;
@@ -331,17 +331,17 @@ export interface API {
   sitepackages: string;
   loadBinaryFile: (
     path: string,
-    file_sub_resource_hash?: string | undefined,
+    file_sub_resource_hash?: string | undefined
   ) => Promise<Uint8Array>;
   loadDynlib: (
     lib: string,
     global: boolean,
     searchDirs?: string[] | undefined,
-    readFileFunc?: (path: string) => Uint8Array,
+    readFileFunc?: (path: string) => Uint8Array
   ) => Promise<void>;
   loadDynlibsFromPackage: (
     pkg: InternalPackageData,
-    dynlibPaths: string[],
+    dynlibPaths: string[]
   ) => Promise<void>;
 
   _Comlink: any;
