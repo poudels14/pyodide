@@ -136,9 +136,16 @@ export function preloadWasm(Module: Module, indexURL: string) {
     // https://emscripten.org/docs/api_reference/module.html?highlight=instantiatewasm#Module.instantiateWasm
     return;
   }
-  const { binary, response } = compat.fetchBinary(
-    indexURL + "pyodide.asm.wasm"
-  );
+
+  const {
+    // @ts-expect-error
+    binary,
+    // @ts-expect-error
+    response,
+    // @ts-expect-error
+    module: wasmModule,
+  } = compat.fetchWasmModule(indexURL + "pyodide.asm.wasm");
+
   Module.instantiateWasm = function (
     imports: { [key: string]: any },
     successCallback: (
@@ -148,13 +155,21 @@ export function preloadWasm(Module: Module, indexURL: string) {
   ) {
     (async function () {
       try {
-        let res: WebAssembly.WebAssemblyInstantiatedSource;
+        let instance: any, module: any;
         if (response) {
-          res = await WebAssembly.instantiateStreaming(response, imports);
+          const res = await WebAssembly.instantiateStreaming(response, imports);
+          module = res.module;
+          instance = res.instance;
         } else {
-          res = await WebAssembly.instantiate(await binary, imports);
+          if (wasmModule) {
+            module = await wasmModule;
+            instance = await WebAssembly.instantiate(module, imports);
+          } else {
+            const res = await WebAssembly.instantiate(await binary, imports);
+            module = res.module;
+            instance = res.instance;
+          }
         }
-        const { instance, module } = res;
         // When overriding instantiateWasm, in asan builds, we also need
         // to take care of creating the WasmOffsetConverter
         // @ts-ignore

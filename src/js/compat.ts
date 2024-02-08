@@ -33,6 +33,10 @@ export type CompatExtension = {
   ) =>
     | { response: Promise<Response>; binary?: undefined }
     | { binary: Promise<Uint8Array>; response?: undefined };
+  // If set, wasm module will be loaded by calling this
+  fetchWasmModule?(path: string): {
+    module: Promise<WebAssembly.Module>;
+  };
 };
 
 // Need to store in globalThis since this code seems to be added to two
@@ -55,12 +59,21 @@ export const compat = {
     if (ext.resolvePath && (override || !__compatExt.resolvePath)) {
       __compatExt.resolvePath = ext.resolvePath;
     }
+    if (ext.fetchWasmModule && (override || !__compatExt.fetchWasmModule)) {
+      __compatExt.fetchWasmModule = ext.fetchWasmModule;
+    }
   },
   get node() {
     return globalThis._____pyodide_compatExt.node;
   },
   resolvePath(path: string, base?: string) {
     return globalThis._____pyodide_compatExt.resolvePath(path, base);
+  },
+  fetchWasmModule(path: string) {
+    const compatExt = globalThis._____pyodide_compatExt;
+    return compatExt.fetchWasmModule
+      ? compatExt.fetchWasmModule(path)
+      : compatExt.fetchBinary(path);
   },
   fetchBinary(path: string, file_sub_resource_hash?: string | undefined) {
     return globalThis._____pyodide_compatExt.fetchBinary(
